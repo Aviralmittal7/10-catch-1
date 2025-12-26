@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, GameState, Player, Suit, Trick } from '@/lib/gameTypes';
-
+import { toast } from 'sonner';
 interface OnlineGameState {
   gameId: string | null;
   gameCode: string | null;
@@ -84,7 +84,9 @@ export function useOnlineGame() {
       
       return code;
     } catch (error: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: error.message }));
+      const errorMsg = error.message || 'Failed to create game';
+      toast.error(errorMsg);
+      setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
       return null;
     }
   }, []);
@@ -150,7 +152,9 @@ export function useOnlineGame() {
       
       return true;
     } catch (error: any) {
-      setState(prev => ({ ...prev, isLoading: false, error: error.message }));
+      const errorMsg = error.message || 'Failed to join game';
+      toast.error(errorMsg);
+      setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
       return false;
     }
   }, []);
@@ -169,7 +173,9 @@ export function useOnlineGame() {
       
       return true;
     } catch (error: any) {
-      setState(prev => ({ ...prev, error: error.message }));
+      const errorMsg = error.message || 'Failed to start game';
+      toast.error(errorMsg);
+      setState(prev => ({ ...prev, error: errorMsg }));
       return false;
     }
   }, [state.gameId, state.isHost, state.playerId]);
@@ -194,6 +200,7 @@ export function useOnlineGame() {
       return true;
     } catch (error: any) {
       console.error('Error playing card:', error);
+      toast.error('Failed to play card. Please try again.');
       return false;
     }
   }, [state.gameId, state.playerIndex, state.playerId]);
