@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      game_players: {
+        Row: {
+          created_at: string
+          game_id: string
+          hand: Json
+          id: string
+          is_human: boolean
+          is_ready: boolean
+          name: string
+          player_index: number
+          team: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          game_id: string
+          hand?: Json
+          id?: string
+          is_human?: boolean
+          is_ready?: boolean
+          name: string
+          player_index: number
+          team: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          game_id?: string
+          hand?: Json
+          id?: string
+          is_human?: boolean
+          is_ready?: boolean
+          name?: string
+          player_index?: number
+          team?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          code: string
+          completed_tricks: Json
+          created_at: string
+          current_player_index: number
+          current_trick: Json
+          dealer_index: number
+          game_phase: string
+          id: string
+          is_mendikot: boolean
+          is_whitewash: boolean
+          last_trick_winner: string | null
+          message: string
+          pot_tens: number
+          pot_tens_team: string | null
+          status: string
+          team_a_tens: number
+          team_a_tricks_won: number
+          team_b_tens: number
+          team_b_tricks_won: number
+          trump_card: Json | null
+          trump_revealed: boolean
+          trump_setter_index: number | null
+          trump_suit: string | null
+          updated_at: string
+          winner: string | null
+        }
+        Insert: {
+          code: string
+          completed_tricks?: Json
+          created_at?: string
+          current_player_index?: number
+          current_trick?: Json
+          dealer_index?: number
+          game_phase?: string
+          id?: string
+          is_mendikot?: boolean
+          is_whitewash?: boolean
+          last_trick_winner?: string | null
+          message?: string
+          pot_tens?: number
+          pot_tens_team?: string | null
+          status?: string
+          team_a_tens?: number
+          team_a_tricks_won?: number
+          team_b_tens?: number
+          team_b_tricks_won?: number
+          trump_card?: Json | null
+          trump_revealed?: boolean
+          trump_setter_index?: number | null
+          trump_suit?: string | null
+          updated_at?: string
+          winner?: string | null
+        }
+        Update: {
+          code?: string
+          completed_tricks?: Json
+          created_at?: string
+          current_player_index?: number
+          current_trick?: Json
+          dealer_index?: number
+          game_phase?: string
+          id?: string
+          is_mendikot?: boolean
+          is_whitewash?: boolean
+          last_trick_winner?: string | null
+          message?: string
+          pot_tens?: number
+          pot_tens_team?: string | null
+          status?: string
+          team_a_tens?: number
+          team_a_tricks_won?: number
+          team_b_tens?: number
+          team_b_tricks_won?: number
+          trump_card?: Json | null
+          trump_revealed?: boolean
+          trump_setter_index?: number | null
+          trump_suit?: string | null
+          updated_at?: string
+          winner?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
