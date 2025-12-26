@@ -34,6 +34,10 @@ export interface GameState {
   teamBTricksWon: number;
   teamATens: number;
   teamBTens: number;
+  // Unconfirmed tens tracking
+  potTens: number; // Tens waiting to be confirmed
+  potTensTeam: 'A' | 'B' | null; // Team that needs to confirm
+  lastTrickWinner: 'A' | 'B' | null; // Track last winner for confirmation
   dealerIndex: number;
   gamePhase: 'setup' | 'dealing' | 'playing' | 'trickEnd' | 'roundEnd' | 'gameEnd';
   message: string;

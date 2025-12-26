@@ -60,15 +60,23 @@ export function GameRules({ onBack }: GameRulesProps) {
               <section>
                 <div className="flex items-center gap-2 mb-3">
                   <Trophy className="w-5 h-5 text-gold" />
-                  <h3 className="text-lg font-semibold">Winning</h3>
+                  <h3 className="text-lg font-semibold">Winning & Ten Confirmation</h3>
                 </div>
                 <div className="space-y-3 text-muted-foreground">
                   <p>
                     <strong className="text-foreground">The goal is to capture Tens.</strong> The team 
                     that captures 3 or 4 tens wins the round.
                   </p>
+                  <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
+                    <p className="font-medium text-primary">Ten Confirmation Rule:</p>
+                    <p className="mt-2">
+                      When a team wins a trick containing a ten, they must also win the <strong>next consecutive trick</strong> to 
+                      confirm the capture. If the opponent wins the next trick, the ten stays "in the pot" - 
+                      the original team still needs to win a consecutive trick to confirm it.
+                    </p>
+                  </div>
                   <p>
-                    If each team has 2 tens, the team with 7 or more tricks wins.
+                    If each team has 2 confirmed tens, the team with 7 or more tricks wins.
                   </p>
                   <div className="bg-gold/10 border border-gold/30 rounded-lg p-4 mt-4">
                     <p className="font-medium text-gold">Special Victories:</p>
