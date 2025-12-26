@@ -110,7 +110,7 @@ export function OnlineGameBoard({
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={true}
+          showCards={false}
           position="right"
           playerName={reorderedPlayers[1].name}
           team={reorderedPlayers[1].team}
@@ -125,7 +125,7 @@ export function OnlineGameBoard({
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={true}
+          showCards={false}
           position="top"
           playerName={reorderedPlayers[2].name}
           team={reorderedPlayers[2].team}
@@ -140,7 +140,7 @@ export function OnlineGameBoard({
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={true}
+          showCards={false}
           position="left"
           playerName={reorderedPlayers[3].name}
           team={reorderedPlayers[3].team}

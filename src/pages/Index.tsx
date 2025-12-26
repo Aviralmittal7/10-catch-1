@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { GameBoard } from '@/components/game/GameBoard';
 import { GameSetup } from '@/components/game/GameSetup';
@@ -6,14 +8,41 @@ import { GameRules } from '@/components/game/GameRules';
 import { OnlineLobby } from '@/components/game/OnlineLobby';
 import { OnlineGameBoard } from '@/components/game/OnlineGameBoard';
 import { useOnlineGame } from '@/hooks/useOnlineGame';
-import { Spade, Heart, Diamond, Club, Play, BookOpen, Trophy, Globe } from 'lucide-react';
+import { Spade, Heart, Diamond, Club, Play, BookOpen, Trophy, Globe, LogOut, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 import heroImage from '@/assets/hero-cards.jpg';
+import type { User } from '@supabase/supabase-js';
 type View = 'menu' | 'setup' | 'rules' | 'game' | 'online';
 const Index = () => {
+  const navigate = useNavigate();
   const [view, setView] = useState<View>('menu');
   const [playerNames, setPlayerNames] = useState<string[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const onlineGame = useOnlineGame();
+
+  useEffect(() => {
+    const guestMode = localStorage.getItem('guestMode');
+    setIsGuest(guestMode === 'true');
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          localStorage.removeItem('guestMode');
+          setIsGuest(false);
+        }
+      }
+    );
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
   const handleStartGame = (names: string[]) => {
     setPlayerNames(names);
     setView('game');
@@ -21,6 +50,17 @@ const Index = () => {
   const handleLeaveOnline = async () => {
     await onlineGame.leaveGame();
     setView('menu');
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem('guestMode');
+    setIsGuest(false);
+    toast.success('Logged out successfully');
+  };
+
+  const handleLogin = () => {
+    navigate('/auth');
   };
   if (view === 'setup') {
     return <GameSetup onStartGame={handleStartGame} onBack={() => setView('menu')} />;
@@ -38,6 +78,26 @@ const Index = () => {
     return <OnlineLobby onCreateGame={onlineGame.createGame} onJoinGame={onlineGame.joinGame} onStartGame={onlineGame.startGame} onBack={handleLeaveOnline} gameCode={onlineGame.gameCode} players={onlineGame.players} isHost={onlineGame.isHost} isLoading={onlineGame.isLoading} error={onlineGame.error} />;
   }
   return <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Auth button */}
+      <div className="absolute top-4 right-4 z-20">
+        {user ? (
+          <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
+        ) : isGuest ? (
+          <Button variant="outline" size="sm" onClick={handleLogin} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Sign In
+          </Button>
+        ) : (
+          <Button variant="outline" size="sm" onClick={handleLogin} className="gap-2">
+            <LogIn className="w-4 h-4" />
+            Login
+          </Button>
+        )}
+      </div>
+
       {/* Hero background */}
       <div className="absolute inset-0">
         <img src={heroImage} alt="Card table" className="w-full h-full object-cover opacity-30" />
