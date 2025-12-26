@@ -66,11 +66,61 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
         const newCompletedTricks = [...prev.completedTricks, { winnerId, cards: trickCards }];
         const newTeamATricks = prev.teamATricksWon + (winnerTeam === 'A' ? 1 : 0);
         const newTeamBTricks = prev.teamBTricksWon + (winnerTeam === 'B' ? 1 : 0);
-        const newTeamATens = prev.teamATens + (winnerTeam === 'A' ? tensInTrick : 0);
-        const newTeamBTens = prev.teamBTens + (winnerTeam === 'B' ? tensInTrick : 0);
+        
+        // Handle pot tens confirmation logic
+        let newTeamATens = prev.teamATens;
+        let newTeamBTens = prev.teamBTens;
+        let newPotTens = prev.potTens;
+        let newPotTensTeam = prev.potTensTeam;
+        let confirmMessage = '';
+        
+        // First, check if previous pot tens get confirmed or stay in pot
+        if (prev.potTens > 0 && prev.potTensTeam) {
+          if (winnerTeam === prev.potTensTeam) {
+            // Same team wins consecutive trick - tens confirmed!
+            if (winnerTeam === 'A') {
+              newTeamATens += prev.potTens;
+            } else {
+              newTeamBTens += prev.potTens;
+            }
+            confirmMessage = ` (${prev.potTens} ten${prev.potTens > 1 ? 's' : ''} confirmed!)`;
+            newPotTens = 0;
+            newPotTensTeam = null;
+          } else {
+            // Opponent wins - tens remain in pot, waiting for next confirmation
+            // The pot stays with original team, they need to win next trick
+          }
+        }
+        
+        // Now handle tens from this trick
+        if (tensInTrick > 0) {
+          // Add new tens to pot, they need confirmation
+          newPotTens += tensInTrick;
+          newPotTensTeam = winnerTeam;
+        }
         
         // Check if round is over
         if (newCompletedTricks.length === 13) {
+          // On last trick, pot tens go to whoever won the last trick
+          if (newPotTens > 0 && newPotTensTeam) {
+            if (winnerTeam === newPotTensTeam) {
+              // Winner of last trick confirms their pot tens
+              if (winnerTeam === 'A') {
+                newTeamATens += newPotTens;
+              } else {
+                newTeamBTens += newPotTens;
+              }
+            }
+            // If opponent won last trick, pot tens are lost (go to winner of last trick)
+            else {
+              if (winnerTeam === 'A') {
+                newTeamATens += newPotTens;
+              } else {
+                newTeamBTens += newPotTens;
+              }
+            }
+          }
+          
           const result = determineRoundWinner(newTeamATens, newTeamBTens, newTeamATricks, newTeamBTricks);
           return {
             ...prev,
@@ -81,6 +131,9 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
             teamBTricksWon: newTeamBTricks,
             teamATens: newTeamATens,
             teamBTens: newTeamBTens,
+            potTens: 0,
+            potTensTeam: null,
+            lastTrickWinner: winnerTeam,
             trumpSuit: newTrumpSuit,
             trumpRevealed: newTrumpRevealed,
             trumpSetterIndex: newTrumpSetterIndex,
@@ -92,6 +145,8 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           };
         }
         
+        const potMessage = newPotTens > 0 ? ` (${newPotTens} ten${newPotTens > 1 ? 's' : ''} in pot)` : '';
+        
         return {
           ...prev,
           players: newPlayers,
@@ -102,11 +157,14 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           teamBTricksWon: newTeamBTricks,
           teamATens: newTeamATens,
           teamBTens: newTeamBTens,
+          potTens: newPotTens,
+          potTensTeam: newPotTensTeam,
+          lastTrickWinner: winnerTeam,
           trumpSuit: newTrumpSuit,
           trumpRevealed: newTrumpRevealed,
           trumpSetterIndex: newTrumpSetterIndex,
           gamePhase: 'trickEnd',
-          message: `${prev.players[winnerId].name} wins the trick!`
+          message: `${prev.players[winnerId].name} wins the trick!${confirmMessage}${potMessage}`
         };
       }
       
@@ -176,6 +234,8 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           teamBTricks={gameState.teamBTricksWon}
           teamATens={gameState.teamATens}
           teamBTens={gameState.teamBTens}
+          potTens={gameState.potTens}
+          potTensTeam={gameState.potTensTeam}
         />
         <div className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border">
           <span className="text-sm text-foreground">{gameState.message}</span>
