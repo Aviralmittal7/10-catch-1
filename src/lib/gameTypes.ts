@@ -39,7 +39,7 @@ export interface GameState {
   potTensTeam: 'A' | 'B' | null; // Team that needs to confirm
   lastTrickWinner: 'A' | 'B' | null; // Track last winner for confirmation
   dealerIndex: number;
-  gamePhase: 'setup' | 'dealing' | 'playing' | 'trickEnd' | 'roundEnd' | 'gameEnd';
+  gamePhase: 'waiting' | 'setup' | 'dealing' | 'playing' | 'trickEnd' | 'roundEnd' | 'gameEnd';
   message: string;
   winner: 'A' | 'B' | null;
   isMendikot: boolean;
