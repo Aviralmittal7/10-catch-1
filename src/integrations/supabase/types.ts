@@ -150,7 +150,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      leave_game_secure: {
+        Args: { p_game_id: string; p_player_id: string }
+        Returns: Json
+      }
+      play_card_secure: {
+        Args: { p_card: Json; p_game_id: string; p_player_id: string }
+        Returns: Json
+      }
+      start_game_secure: {
+        Args: { p_game_id: string; p_host_player_id: string }
+        Returns: Json
+      }
+      validate_card: { Args: { card: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
