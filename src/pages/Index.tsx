@@ -3,19 +3,29 @@ import { Button } from '@/components/ui/button';
 import { GameBoard } from '@/components/game/GameBoard';
 import { GameSetup } from '@/components/game/GameSetup';
 import { GameRules } from '@/components/game/GameRules';
-import { Spade, Heart, Diamond, Club, Play, BookOpen, Trophy } from 'lucide-react';
+import { OnlineLobby } from '@/components/game/OnlineLobby';
+import { OnlineGameBoard } from '@/components/game/OnlineGameBoard';
+import { useOnlineGame } from '@/hooks/useOnlineGame';
+import { Spade, Heart, Diamond, Club, Play, BookOpen, Trophy, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import heroImage from '@/assets/hero-cards.jpg';
 
-type View = 'menu' | 'setup' | 'rules' | 'game';
+type View = 'menu' | 'setup' | 'rules' | 'game' | 'online';
 
 const Index = () => {
   const [view, setView] = useState<View>('menu');
   const [playerNames, setPlayerNames] = useState<string[]>([]);
   
+  const onlineGame = useOnlineGame();
+  
   const handleStartGame = (names: string[]) => {
     setPlayerNames(names);
     setView('game');
+  };
+  
+  const handleLeaveOnline = async () => {
+    await onlineGame.leaveGame();
+    setView('menu');
   };
   
   if (view === 'setup') {
@@ -28,6 +38,33 @@ const Index = () => {
   
   if (view === 'game') {
     return <GameBoard playerNames={playerNames} onBackToMenu={() => setView('menu')} />;
+  }
+  
+  if (view === 'online') {
+    if (onlineGame.gameState && onlineGame.gameState.gamePhase !== 'waiting' && onlineGame.playerIndex !== null) {
+      return (
+        <OnlineGameBoard
+          gameState={onlineGame.gameState}
+          playerIndex={onlineGame.playerIndex}
+          onPlayCard={onlineGame.playCard}
+          onLeave={handleLeaveOnline}
+        />
+      );
+    }
+    
+    return (
+      <OnlineLobby
+        onCreateGame={onlineGame.createGame}
+        onJoinGame={onlineGame.joinGame}
+        onStartGame={onlineGame.startGame}
+        onBack={handleLeaveOnline}
+        gameCode={onlineGame.gameCode}
+        players={onlineGame.players}
+        isHost={onlineGame.isHost}
+        isLoading={onlineGame.isLoading}
+        error={onlineGame.error}
+      />
+    );
   }
   
   return (
@@ -97,25 +134,37 @@ const Index = () => {
         </div>
         
         {/* Action buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-          <Button
-            size="lg"
-            onClick={() => setView('setup')}
-            className={cn(
-              'flex-1 h-14 text-lg gap-3',
-              'bg-primary hover:bg-primary/90',
-              'gold-glow'
-            )}
-          >
-            <Play className="w-5 h-5" />
-            Play Now
-          </Button>
+        <div className="flex flex-col gap-4 w-full max-w-sm">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Button
+              size="lg"
+              onClick={() => setView('setup')}
+              className={cn(
+                'flex-1 h-14 text-lg gap-3',
+                'bg-primary hover:bg-primary/90',
+                'gold-glow'
+              )}
+            >
+              <Play className="w-5 h-5" />
+              Play vs AI
+            </Button>
+            
+            <Button
+              size="lg"
+              variant="secondary"
+              onClick={() => setView('online')}
+              className="flex-1 h-14 text-lg gap-3"
+            >
+              <Globe className="w-5 h-5" />
+              Play Online
+            </Button>
+          </div>
           
           <Button
             size="lg"
             variant="outline"
             onClick={() => setView('rules')}
-            className="flex-1 h-14 text-lg gap-3"
+            className="h-14 text-lg gap-3"
           >
             <BookOpen className="w-5 h-5" />
             How to Play

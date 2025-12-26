@@ -275,7 +275,7 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={false}
+          showCards={true}
           position="right"
           playerName={gameState.players[1].name}
           team={gameState.players[1].team}
@@ -290,7 +290,7 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={false}
+          showCards={true}
           position="top"
           playerName={gameState.players[2].name}
           team={gameState.players[2].team}
@@ -305,7 +305,7 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           leadSuit={gameState.currentTrick.leadSuit}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
-          showCards={false}
+          showCards={true}
           position="left"
           playerName={gameState.players[3].name}
           team={gameState.players[3].team}
