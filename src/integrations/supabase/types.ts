@@ -14,6 +14,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      game_player_hands: {
+        Row: {
+          hand: Json
+          player_id: string
+          updated_at: string
+        }
+        Insert: {
+          hand?: Json
+          player_id: string
+          updated_at?: string
+        }
+        Update: {
+          hand?: Json
+          player_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_player_hands_player_id_fkey"
+            columns: ["player_id"]
+            isOneToOne: true
+            referencedRelation: "game_players"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_players: {
         Row: {
           created_at: string
@@ -150,6 +176,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_game_secure: { Args: { p_player_name: string }; Returns: Json }
+      get_waiting_game_by_code: {
+        Args: { p_code: string }
+        Returns: {
+          code: string
+          id: string
+          status: string
+        }[]
+      }
+      join_game_secure: {
+        Args: { p_code: string; p_player_name: string }
+        Returns: Json
+      }
       leave_game_secure: {
         Args: { p_game_id: string; p_player_id: string }
         Returns: Json

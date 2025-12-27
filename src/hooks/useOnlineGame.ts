@@ -36,125 +36,68 @@ export function useOnlineGame() {
     error: null,
   });
 
-  // Create a new game
+  // Create a new game (authenticated)
   const createGame = useCallback(async (playerName: string) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
-      const code = generateGameCode();
-      
-      const { data: game, error: gameError } = await supabase
-        .from('games')
-        .insert({
-          code,
-          status: 'waiting',
-          game_phase: 'waiting',
-          message: 'Waiting for players...',
-        })
-        .select()
-        .single();
-      
-      if (gameError) throw gameError;
-      
-      const { data: player, error: playerError } = await supabase
-        .from('game_players')
-        .insert({
-          game_id: game.id,
-          player_index: 0,
-          name: playerName,
-          team: 'A',
-          is_human: true,
-          is_ready: true,
-        })
-        .select()
-        .single();
-      
-      if (playerError) throw playerError;
-      
-      setState(prev => ({
+      const { data, error } = await supabase.rpc('create_game_secure', {
+        p_player_name: playerName,
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error('Failed to create game');
+
+      setState((prev) => ({
         ...prev,
-        gameId: game.id,
-        gameCode: code,
-        playerId: player.id,
-        playerIndex: 0,
+        gameId: data.game_id,
+        gameCode: data.game_code,
+        playerId: data.player_id,
+        playerIndex: data.player_index,
         isHost: true,
         players: [{ name: playerName, team: 'A', isReady: true }],
         isLoading: false,
       }));
-      
-      return code;
+
+      return data.game_code as string;
     } catch (error: any) {
       const errorMsg = error.message || 'Failed to create game';
       toast.error(errorMsg);
-      setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
+      setState((prev) => ({ ...prev, isLoading: false, error: errorMsg }));
       return null;
     }
   }, []);
 
-  // Join an existing game
+  // Join an existing game (authenticated)
   const joinGame = useCallback(async (gameCode: string, playerName: string) => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
-    
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+
     try {
-      const { data: game, error: gameError } = await supabase
-        .from('games')
-        .select('*')
-        .eq('code', gameCode.toUpperCase())
-        .maybeSingle();
-      
-      if (gameError) throw gameError;
-      if (!game) throw new Error('Game not found');
-      if (game.status !== 'waiting') throw new Error('Game already started');
-      
-      const { data: existingPlayers, error: playersError } = await supabase
-        .from('game_players')
-        .select('*')
-        .eq('game_id', game.id)
-        .order('player_index');
-      
-      if (playersError) throw playersError;
-      if (existingPlayers.length >= 4) throw new Error('Game is full');
-      
-      const playerIndex = existingPlayers.length;
-      const team = playerIndex % 2 === 0 ? 'A' : 'B';
-      
-      const { data: player, error: playerError } = await supabase
-        .from('game_players')
-        .insert({
-          game_id: game.id,
-          player_index: playerIndex,
-          name: playerName,
-          team,
-          is_human: true,
-          is_ready: true,
-        })
-        .select()
-        .single();
-      
-      if (playerError) throw playerError;
-      
-      const allPlayers = [...existingPlayers, player].map(p => ({
-        name: p.name,
-        team: p.team as 'A' | 'B',
-        isReady: p.is_ready,
-      }));
-      
-      setState(prev => ({
+      const { data, error } = await supabase.rpc('join_game_secure', {
+        p_code: gameCode.toUpperCase(),
+        p_player_name: playerName,
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error('Failed to join game');
+
+      setState((prev) => ({
         ...prev,
-        gameId: game.id,
-        gameCode: game.code,
-        playerId: player.id,
-        playerIndex,
-        isHost: false,
-        players: allPlayers,
+        gameId: data.game_id,
+        gameCode: data.game_code,
+        playerId: data.player_id,
+        playerIndex: data.player_index,
+        isHost: data.player_index === 0,
+        // players list will be populated by realtime fetch
+        players: prev.players,
         isLoading: false,
       }));
-      
+
       return true;
     } catch (error: any) {
       const errorMsg = error.message || 'Failed to join game';
       toast.error(errorMsg);
-      setState(prev => ({ ...prev, isLoading: false, error: errorMsg }));
+      setState((prev) => ({ ...prev, isLoading: false, error: errorMsg }));
       return false;
     }
   }, []);
@@ -233,93 +176,73 @@ export function useOnlineGame() {
 
   // Subscribe to game updates
   useEffect(() => {
-    if (!state.gameId) return;
-    
-    const gameChannel = supabase
-      .channel(`game-${state.gameId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
-        async (payload) => {
-          const game = payload.new as any;
-          
-          // Fetch players
-          const { data: players } = await supabase
-            .from('game_players')
-            .select('*')
-            .eq('game_id', state.gameId)
-            .order('player_index');
-          
-          if (players) {
-            const gameState = convertToGameState(game, players);
-            setState(prev => ({
-              ...prev,
-              gameState,
-              players: players.map(p => ({
-                name: p.name,
-                team: p.team as 'A' | 'B',
-                isReady: p.is_ready,
-              })),
-            }));
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${state.gameId}` },
-        async () => {
-          const { data: players } = await supabase
-            .from('game_players')
-            .select('*')
-            .eq('game_id', state.gameId)
-            .order('player_index');
-          
-          if (players) {
-            setState(prev => ({
-              ...prev,
-              players: players.map(p => ({
-                name: p.name,
-                team: p.team as 'A' | 'B',
-                isReady: p.is_ready,
-              })),
-            }));
-          }
-        }
-      )
-      .subscribe();
-    
-    // Initial fetch
-    (async () => {
-      const { data: game } = await supabase
-        .from('games')
-        .select('*')
-        .eq('id', state.gameId)
-        .single();
-      
+    if (!state.gameId || !state.playerId || state.playerIndex === null) return;
+
+    const fetchAndSet = async (gameRow?: any) => {
+      const game = gameRow
+        ? gameRow
+        : (await supabase.from('games').select('*').eq('id', state.gameId).single()).data;
+
       const { data: players } = await supabase
         .from('game_players')
-        .select('*')
+        .select('id, game_id, player_index, name, team, is_ready, is_human')
         .eq('game_id', state.gameId)
         .order('player_index');
-      
-        if (game && players) {
-        const gameState = convertToGameState(game, players);
-        setState(prev => ({
+
+      const { data: myHandRow } = await supabase
+        .from('game_player_hands')
+        .select('hand')
+        .eq('player_id', state.playerId)
+        .maybeSingle();
+
+      if (game && players) {
+        const myHand = (myHandRow?.hand as unknown as Card[]) || [];
+        const gameState = convertToGameState(game, players, state.playerIndex, myHand);
+
+        setState((prev) => ({
           ...prev,
           gameState,
-          players: players.map(p => ({
+          players: players.map((p) => ({
             name: p.name,
             team: p.team as 'A' | 'B',
             isReady: p.is_ready,
           })),
         }));
       }
-    })();
-    
+    };
+
+    const gameChannel = supabase
+      .channel(`game-${state.gameId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'games', filter: `id=eq.${state.gameId}` },
+        async (payload) => {
+          await fetchAndSet(payload.new as any);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${state.gameId}` },
+        async () => {
+          await fetchAndSet();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'game_player_hands', filter: `player_id=eq.${state.playerId}` },
+        async () => {
+          await fetchAndSet();
+        }
+      )
+      .subscribe();
+
+    // Initial fetch
+    fetchAndSet();
+
     return () => {
       supabase.removeChannel(gameChannel);
     };
-  }, [state.gameId]);
+  }, [state.gameId, state.playerId, state.playerIndex]);
 
   return {
     ...state,
@@ -331,15 +254,16 @@ export function useOnlineGame() {
   };
 }
 
-function convertToGameState(game: any, players: any[]): GameState {
+function convertToGameState(game: any, players: any[], myPlayerIndex: number, myHand: Card[]): GameState {
   const currentTrick = game.current_trick as any;
-  
+
   return {
-    players: players.map((p, index) => ({
+    players: players.map((p: any, index: number) => ({
       id: index,
       name: p.name,
       team: p.team as 'A' | 'B',
-      hand: (p.hand as unknown as Card[]) || [],
+      // Never put opponents' hands into client state
+      hand: index === myPlayerIndex ? myHand : [],
       isHuman: p.is_human,
     })),
     currentPlayerIndex: game.current_player_index,
