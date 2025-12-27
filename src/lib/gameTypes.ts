@@ -29,7 +29,7 @@ export interface GameState {
   trumpCard: Card | null;
   trumpSetterIndex: number | null;
   currentTrick: Trick;
-  completedTricks: { winnerId: number; cards: Card[] }[];
+  completedTricks: { winnerId: number; cards: { playerId: number; card: Card }[] }[];
   teamATricksWon: number;
   teamBTricksWon: number;
   teamATens: number;
