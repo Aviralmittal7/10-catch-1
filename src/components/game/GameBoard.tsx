@@ -63,8 +63,8 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
       // Check if trick is complete
       if (newCurrentTrick.cards.length === 4) {
         const winnerId = determineTrickWinner(newCurrentTrick, newTrumpSuit, newTrumpRevealed);
-        const trickCards = newCurrentTrick.cards.map(c => c.card);
-        const tensInTrick = countTens(trickCards);
+        const trickCards = newCurrentTrick.cards; // Keep full card info with playerIds
+        const tensInTrick = countTens(trickCards.map(c => c.card));
         const winnerTeam = prev.players[winnerId].team;
         
         const newCompletedTricks = [...prev.completedTricks, { winnerId, cards: trickCards }];
@@ -270,6 +270,10 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           currentTrick={gameState.currentTrick}
           trumpSuit={gameState.trumpSuit}
           trumpRevealed={gameState.trumpRevealed}
+          lastCompletedTrick={gameState.completedTricks.length > 0 
+            ? gameState.completedTricks[gameState.completedTricks.length - 1] 
+            : null}
+          showLastTrick={gameState.gamePhase === 'trickEnd'}
         />
       </div>
       

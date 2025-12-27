@@ -1,4 +1,4 @@
-import { Trick, Suit, SUIT_SYMBOLS } from '@/lib/gameTypes';
+import { Trick, Suit, SUIT_SYMBOLS, Card } from '@/lib/gameTypes';
 import { PlayingCard } from './PlayingCard';
 import { cn } from '@/lib/utils';
 
@@ -6,9 +6,15 @@ interface TrickAreaProps {
   currentTrick: Trick;
   trumpSuit: Suit | null;
   trumpRevealed: boolean;
+  lastCompletedTrick?: { winnerId: number; cards: { playerId: number; card: Card }[] } | null;
+  showLastTrick?: boolean;
 }
 
-export function TrickArea({ currentTrick, trumpSuit, trumpRevealed }: TrickAreaProps) {
+export function TrickArea({ currentTrick, trumpSuit, trumpRevealed, lastCompletedTrick, showLastTrick }: TrickAreaProps) {
+  // Show last completed trick cards during trickEnd phase, otherwise show current trick
+  const displayCards = showLastTrick && lastCompletedTrick 
+    ? lastCompletedTrick.cards 
+    : currentTrick.cards;
   const positions = [
     'bottom-4 left-1/2 -translate-x-1/2', // Player 0 (bottom)
     'right-4 top-1/2 -translate-y-1/2',   // Player 1 (right)
@@ -32,16 +38,20 @@ export function TrickArea({ currentTrick, trumpSuit, trumpRevealed }: TrickAreaP
       )}
       
       {/* Played cards */}
-      {currentTrick.cards.map(({ playerId, card }, index) => (
+      {displayCards.map(({ playerId, card }) => (
         <div
           key={card.id}
-          className={cn('absolute animate-card-play', positions[playerId])}
+          className={cn(
+            'absolute',
+            showLastTrick ? 'animate-pulse' : 'animate-card-play',
+            positions[playerId]
+          )}
         >
           <PlayingCard card={card} size="md" />
         </div>
       ))}
       
-      {currentTrick.cards.length === 0 && (
+      {displayCards.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
           Play a card to start
         </div>
