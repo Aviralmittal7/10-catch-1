@@ -1,7 +1,26 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, GameState, Player, Suit, Trick } from '@/lib/gameTypes';
+import { Card, GameState, Suit } from '@/lib/gameTypes';
 import { toast } from 'sonner';
+
+// Type for RPC responses (jsonb returns Json which we need to cast)
+interface CreateGameResponse {
+  success: boolean;
+  game_id: string;
+  game_code: string;
+  player_id: string;
+  player_index: number;
+}
+
+interface JoinGameResponse {
+  success: boolean;
+  game_id: string;
+  game_code: string;
+  player_id: string;
+  player_index: number;
+  team: 'A' | 'B';
+}
+
 interface OnlineGameState {
   gameId: string | null;
   gameCode: string | null;
@@ -12,15 +31,6 @@ interface OnlineGameState {
   gameState: GameState | null;
   isLoading: boolean;
   error: string | null;
-}
-
-function generateGameCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
 }
 
 export function useOnlineGame() {
@@ -46,20 +56,22 @@ export function useOnlineGame() {
       });
 
       if (error) throw error;
-      if (!data?.success) throw new Error('Failed to create game');
+      
+      const result = data as unknown as CreateGameResponse;
+      if (!result?.success) throw new Error('Failed to create game');
 
       setState((prev) => ({
         ...prev,
-        gameId: data.game_id,
-        gameCode: data.game_code,
-        playerId: data.player_id,
-        playerIndex: data.player_index,
+        gameId: result.game_id,
+        gameCode: result.game_code,
+        playerId: result.player_id,
+        playerIndex: result.player_index,
         isHost: true,
         players: [{ name: playerName, team: 'A', isReady: true }],
         isLoading: false,
       }));
 
-      return data.game_code as string;
+      return result.game_code;
     } catch (error: any) {
       const errorMsg = error.message || 'Failed to create game';
       toast.error(errorMsg);
@@ -79,15 +91,17 @@ export function useOnlineGame() {
       });
 
       if (error) throw error;
-      if (!data?.success) throw new Error('Failed to join game');
+      
+      const result = data as unknown as JoinGameResponse;
+      if (!result?.success) throw new Error('Failed to join game');
 
       setState((prev) => ({
         ...prev,
-        gameId: data.game_id,
-        gameCode: data.game_code,
-        playerId: data.player_id,
-        playerIndex: data.player_index,
-        isHost: data.player_index === 0,
+        gameId: result.game_id,
+        gameCode: result.game_code,
+        playerId: result.player_id,
+        playerIndex: result.player_index,
+        isHost: result.player_index === 0,
         // players list will be populated by realtime fetch
         players: prev.players,
         isLoading: false,
