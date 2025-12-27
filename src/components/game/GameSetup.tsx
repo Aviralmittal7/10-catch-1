@@ -3,19 +3,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Users, Play } from 'lucide-react';
+import { Users, Play, Brain, Zap, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AIDifficulty } from '@/lib/gameTypes';
 
 interface GameSetupProps {
-  onStartGame: (playerNames: string[]) => void;
+  onStartGame: (playerNames: string[], difficulty: AIDifficulty) => void;
   onBack: () => void;
 }
 
+const difficultyOptions: { value: AIDifficulty; label: string; description: string; icon: React.ReactNode }[] = [
+  { value: 'easy', label: 'Easy', description: 'AI makes simple moves', icon: <Sparkles className="w-4 h-4" /> },
+  { value: 'medium', label: 'Medium', description: 'AI uses basic strategy', icon: <Zap className="w-4 h-4" /> },
+  { value: 'hard', label: 'Hard', description: 'AI plays optimally', icon: <Brain className="w-4 h-4" /> },
+];
+
 export function GameSetup({ onStartGame, onBack }: GameSetupProps) {
   const [playerName, setPlayerName] = useState('You');
+  const [difficulty, setDifficulty] = useState<AIDifficulty>('medium');
   
   const handleStart = () => {
-    onStartGame([playerName, 'Bot 1', 'Partner', 'Bot 2']);
+    onStartGame([playerName, 'Bot 1', 'Partner', 'Bot 2'], difficulty);
   };
   
   return (
@@ -40,6 +48,28 @@ export function GameSetup({ onStartGame, onBack }: GameSetupProps) {
               placeholder="Enter your name"
               className="bg-secondary/50"
             />
+          </div>
+
+          <div className="space-y-3">
+            <Label>AI Difficulty</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {difficultyOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setDifficulty(option.value)}
+                  className={cn(
+                    'p-3 rounded-lg text-center transition-all border',
+                    difficulty === option.value
+                      ? 'bg-primary/20 border-primary text-primary'
+                      : 'bg-secondary/30 border-border hover:bg-secondary/50'
+                  )}
+                >
+                  <div className="flex justify-center mb-1">{option.icon}</div>
+                  <div className="text-sm font-medium">{option.label}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{option.description}</div>
+                </button>
+              ))}
+            </div>
           </div>
           
           <div className="space-y-3">

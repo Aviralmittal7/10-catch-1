@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { GameState, Card, Suit } from '@/lib/gameTypes';
+import { GameState, Card, Suit, AIDifficulty } from '@/lib/gameTypes';
 import {
   createInitialGameState,
   canPlayCard,
@@ -20,10 +20,11 @@ import { toast } from 'sonner';
 
 interface GameBoardProps {
   playerNames: string[];
+  difficulty: AIDifficulty;
   onBackToMenu: () => void;
 }
 
-export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
+export function GameBoard({ playerNames, difficulty, onBackToMenu }: GameBoardProps) {
   const [gameState, setGameState] = useState<GameState>(() => 
     createInitialGameState(playerNames)
   );
@@ -197,7 +198,7 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
       const playAICard = async () => {
         try {
           // Use AI-powered card selection
-          const card = await getAICard(gameState, currentPlayer.id);
+          const card = await getAICard(gameState, currentPlayer.id, difficulty);
           playCard(currentPlayer.id, card);
         } catch (error) {
           console.error('AI card selection failed:', error);

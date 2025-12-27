@@ -11,6 +11,8 @@ interface Card {
   id: string;
 }
 
+type AIDifficulty = 'easy' | 'medium' | 'hard';
+
 interface GameContext {
   hand: Card[];
   leadSuit: string | null;
@@ -23,7 +25,26 @@ interface GameContext {
   teamATens: number;
   teamBTens: number;
   completedTricksCount: number;
+  difficulty: AIDifficulty;
 }
+
+const difficultySettings: Record<AIDifficulty, { temperature: number; useAI: boolean; systemPromptSuffix: string }> = {
+  easy: {
+    temperature: 1.0,
+    useAI: false, // Use simple fallback logic
+    systemPromptSuffix: '',
+  },
+  medium: {
+    temperature: 0.5,
+    useAI: true,
+    systemPromptSuffix: 'Play reasonably but not perfectly. Sometimes make suboptimal moves.',
+  },
+  hard: {
+    temperature: 0.2,
+    useAI: true,
+    systemPromptSuffix: 'Play optimally using advanced strategy. Analyze all possibilities.',
+  },
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,18 +53,33 @@ serve(async (req) => {
 
   try {
     const gameContext: GameContext = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const difficulty = gameContext.difficulty || 'medium';
+    const settings = difficultySettings[difficulty];
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY is not configured');
-    }
-
     // Find playable cards
     const playableCards = getPlayableCards(gameContext);
     
     if (playableCards.length === 1) {
-      // Only one option, no need to call AI
+      // Only one option, no need to think
       return new Response(JSON.stringify({ card: playableCards[0] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Easy mode: use simple random/fallback logic
+    if (!settings.useAI) {
+      const easyCard = getEasyModeCard(gameContext, playableCards);
+      return new Response(JSON.stringify({ card: easyCard, mode: 'easy' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      console.error('LOVABLE_API_KEY is not configured, using fallback');
+      const fallbackCard = getSimpleAICard(gameContext, playableCards);
+      return new Response(JSON.stringify({ card: fallbackCard, fallback: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -63,6 +99,8 @@ Strategy principles:
 4. Lead with high cards to draw out opponent's trumps
 5. Save trumps for capturing tens or critical tricks
 6. In endgame, count remaining cards to optimize play
+
+${settings.systemPromptSuffix}
 
 Respond with ONLY a valid JSON object: {"cardId": "the exact card id to play", "reason": "brief explanation"}`;
 
@@ -92,7 +130,7 @@ Which card should you play? Consider strategy for Mendikot.`;
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3,
+        temperature: settings.temperature,
         max_tokens: 200,
       }),
     });
@@ -135,7 +173,7 @@ Which card should you play? Consider strategy for Mendikot.`;
       selectedCard = getSimpleAICard(gameContext, playableCards);
     }
 
-    return new Response(JSON.stringify({ card: selectedCard }), {
+    return new Response(JSON.stringify({ card: selectedCard, mode: difficulty }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
@@ -158,6 +196,27 @@ function getPlayableCards(ctx: GameContext): Card[] {
   if (suitCards.length > 0) return suitCards; // Must follow suit
   
   return hand; // Can't follow, play any
+}
+
+function getEasyModeCard(ctx: GameContext, playableCards: Card[]): Card {
+  // Easy mode: mostly random with slight preference for lower cards
+  const shuffled = [...playableCards].sort(() => Math.random() - 0.5);
+  
+  // 70% chance to pick from bottom half (lower cards), 30% from top
+  const rankValues: Record<string, number> = {
+    'A': 14, 'K': 13, 'Q': 12, 'J': 11, '10': 10,
+    '9': 9, '8': 8, '7': 7, '6': 6, '5': 5, '4': 4, '3': 3, '2': 2
+  };
+  
+  const sorted = [...playableCards].sort((a, b) => rankValues[a.rank] - rankValues[b.rank]);
+  
+  if (Math.random() < 0.7) {
+    // Pick from lower half
+    const lowerHalf = sorted.slice(0, Math.ceil(sorted.length / 2));
+    return lowerHalf[Math.floor(Math.random() * lowerHalf.length)];
+  }
+  
+  return shuffled[0];
 }
 
 function getSimpleAICard(ctx: GameContext, playableCards: Card[]): Card {

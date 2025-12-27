@@ -1,16 +1,16 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, GameState } from '@/lib/gameTypes';
+import { Card, GameState, AIDifficulty } from '@/lib/gameTypes';
 
 interface UseAICardSelectResult {
-  getAICard: (gameState: GameState, playerId: number) => Promise<Card>;
+  getAICard: (gameState: GameState, playerId: number, difficulty: AIDifficulty) => Promise<Card>;
   isThinking: boolean;
 }
 
 export function useAICardSelect(): UseAICardSelectResult {
   const [isThinking, setIsThinking] = useState(false);
 
-  const getAICard = useCallback(async (gameState: GameState, playerId: number): Promise<Card> => {
+  const getAICard = useCallback(async (gameState: GameState, playerId: number, difficulty: AIDifficulty): Promise<Card> => {
     const player = gameState.players[playerId];
     
     // Don't use AI for human players
@@ -33,6 +33,7 @@ export function useAICardSelect(): UseAICardSelectResult {
         teamATens: gameState.teamATens,
         teamBTens: gameState.teamBTens,
         completedTricksCount: gameState.completedTricks.length,
+        difficulty: difficulty,
       };
 
       const { data, error } = await supabase.functions.invoke('ai-card-select', {
