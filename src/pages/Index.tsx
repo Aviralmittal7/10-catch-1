@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { AIDifficulty } from '@/lib/gameTypes';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { GameBoard } from '@/components/game/GameBoard';
@@ -20,6 +21,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [view, setView] = useState<View>('menu');
   const [playerNames, setPlayerNames] = useState<string[]>([]);
+  const [difficulty, setDifficulty] = useState<AIDifficulty>('medium');
   const [user, setUser] = useState<User | null>(null);
   const [isGuest, setIsGuest] = useState(false);
   const onlineGame = useOnlineGame();
@@ -45,8 +47,9 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleStartGame = (names: string[]) => {
+  const handleStartGame = (names: string[], selectedDifficulty: AIDifficulty) => {
     setPlayerNames(names);
+    setDifficulty(selectedDifficulty);
     setView('game');
   };
 
@@ -73,7 +76,7 @@ const Index = () => {
     return <GameRules onBack={() => setView('menu')} />;
   }
   if (view === 'game') {
-    return <GameBoard playerNames={playerNames} onBackToMenu={() => setView('menu')} />;
+    return <GameBoard playerNames={playerNames} difficulty={difficulty} onBackToMenu={() => setView('menu')} />;
   }
   if (view === 'online') {
     if (onlineGame.gameState && onlineGame.gameState.gamePhase !== 'waiting' && onlineGame.playerIndex !== null) {
