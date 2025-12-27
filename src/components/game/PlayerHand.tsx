@@ -2,6 +2,7 @@ import { Card, Suit } from '@/lib/gameTypes';
 import { PlayingCard } from './PlayingCard';
 import { sortHand, canPlayCard } from '@/lib/gameLogic';
 import { cn } from '@/lib/utils';
+import botAvatar from '@/assets/bot-avatar.png';
 
 interface PlayerHandProps {
   cards: Card[];
@@ -14,6 +15,7 @@ interface PlayerHandProps {
   position: 'bottom' | 'top' | 'left' | 'right';
   playerName: string;
   team: 'A' | 'B';
+  isBot?: boolean;
 }
 
 export function PlayerHand({
@@ -26,7 +28,8 @@ export function PlayerHand({
   showCards = true,
   position,
   playerName,
-  team
+  team,
+  isBot = false
 }: PlayerHandProps) {
   const sortedCards = sortHand(cards);
   
@@ -43,11 +46,14 @@ export function PlayerHand({
     left: '-mt-12 first:mt-0',
     right: '-mt-12 first:mt-0'
   };
+
+  // Determine if this is a bot (cards are hidden = not the human player)
+  const showBotAvatar = !showCards;
   
   return (
     <div className={cn('relative', position === 'left' || position === 'right' ? 'h-full' : 'w-full')}>
       <div className={cn(
-        'absolute text-sm font-medium px-3 py-1 rounded-full',
+        'absolute text-sm font-medium px-3 py-1 rounded-full flex items-center gap-2',
         'bg-secondary/80 backdrop-blur-sm',
         isActive && 'animate-pulse-glow bg-primary text-primary-foreground',
         position === 'bottom' && 'top-0 left-1/2 -translate-x-1/2 -translate-y-8',
@@ -55,8 +61,15 @@ export function PlayerHand({
         position === 'left' && 'right-0 top-1/2 -translate-y-1/2 translate-x-8',
         position === 'right' && 'left-0 top-1/2 -translate-y-1/2 -translate-x-8'
       )}>
+        {showBotAvatar && (
+          <img 
+            src={botAvatar} 
+            alt="Bot" 
+            className="w-6 h-6 rounded-full object-cover border border-primary/30"
+          />
+        )}
         <span>{playerName}</span>
-        <span className={cn('ml-2 text-xs', team === 'A' ? 'text-accent' : 'text-chart-5')}>
+        <span className={cn('text-xs', team === 'A' ? 'text-accent' : 'text-chart-5')}>
           Team {team}
         </span>
       </div>

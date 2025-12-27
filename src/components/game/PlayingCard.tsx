@@ -51,28 +51,32 @@ export function PlayingCard({
       disabled={disabled}
       className={cn(
         sizeClasses[size],
-        'rounded-lg bg-foreground card-shadow',
-        'border-2 transition-all duration-200',
-        'flex flex-col items-center justify-between p-1',
+        'rounded-lg bg-white card-shadow',
+        'border-2 border-gray-300 transition-all duration-200',
+        'flex flex-col items-center justify-between p-1.5',
         'font-serif font-bold',
-        isRed ? 'text-card-red' : 'text-card-black',
-        selected && 'ring-2 ring-primary -translate-y-2',
-        !disabled && 'hover:-translate-y-1 hover:shadow-lg cursor-pointer',
-        disabled && 'opacity-60 cursor-not-allowed',
-        'animate-card-deal'
+        isRed ? 'text-red-600' : 'text-gray-900',
+        selected && 'ring-2 ring-primary -translate-y-2 border-primary',
+        !disabled && 'hover:-translate-y-1 hover:shadow-xl hover:border-primary/50 cursor-pointer',
+        disabled && 'opacity-50 cursor-not-allowed',
+        'animate-card-deal shadow-lg'
       )}
       style={{ animationDelay: `${animationDelay}ms` }}
     >
-      <div className="self-start text-xs leading-none">
-        <div>{card.rank}</div>
-        <div>{SUIT_SYMBOLS[card.suit]}</div>
+      <div className="self-start text-sm leading-none font-bold">
+        <div className="drop-shadow-sm">{card.rank}</div>
+        <div className="drop-shadow-sm">{SUIT_SYMBOLS[card.suit]}</div>
       </div>
-      <div className={cn('text-2xl', size === 'sm' && 'text-lg', size === 'lg' && 'text-3xl')}>
+      <div className={cn(
+        'text-3xl drop-shadow-md', 
+        size === 'sm' && 'text-xl', 
+        size === 'lg' && 'text-4xl'
+      )}>
         {SUIT_SYMBOLS[card.suit]}
       </div>
-      <div className="self-end text-xs leading-none rotate-180">
-        <div>{card.rank}</div>
-        <div>{SUIT_SYMBOLS[card.suit]}</div>
+      <div className="self-end text-sm leading-none rotate-180 font-bold">
+        <div className="drop-shadow-sm">{card.rank}</div>
+        <div className="drop-shadow-sm">{SUIT_SYMBOLS[card.suit]}</div>
       </div>
     </button>
   );
