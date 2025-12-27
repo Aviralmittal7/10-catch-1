@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { GameState, Card, Suit } from '@/lib/gameTypes';
 import {
   createInitialGameState,
@@ -14,7 +14,9 @@ import { TrickArea } from './TrickArea';
 import { ScoreBoard } from './ScoreBoard';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { RotateCcw, Trophy } from 'lucide-react';
+import { RotateCcw, Trophy, Brain, Loader2 } from 'lucide-react';
+import { useAICardSelect } from '@/hooks/useAICardSelect';
+import { toast } from 'sonner';
 
 interface GameBoardProps {
   playerNames: string[];
@@ -25,6 +27,8 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
   const [gameState, setGameState] = useState<GameState>(() => 
     createInitialGameState(playerNames)
   );
+  const { getAICard, isThinking } = useAICardSelect();
+  const aiThinkingRef = useRef(false);
   
   const playCard = useCallback((playerId: number, card: Card) => {
     setGameState(prev => {
@@ -182,23 +186,40 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
     });
   }, []);
   
-  // AI plays
+  // AI plays with Lovable AI for smarter decisions
   useEffect(() => {
     if (gameState.gamePhase === 'roundEnd') return;
     
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
-    if (!currentPlayer.isHuman && gameState.gamePhase === 'playing') {
-      const timer = setTimeout(() => {
-        const card = getAICardToPlay(
-          currentPlayer,
-          gameState.currentTrick.leadSuit,
-          gameState.trumpSuit,
-          gameState.trumpRevealed,
-          gameState.currentTrick
-        );
-        playCard(currentPlayer.id, card);
-      }, 800);
-      return () => clearTimeout(timer);
+    if (!currentPlayer.isHuman && gameState.gamePhase === 'playing' && !aiThinkingRef.current) {
+      aiThinkingRef.current = true;
+      
+      const playAICard = async () => {
+        try {
+          // Use AI-powered card selection
+          const card = await getAICard(gameState, currentPlayer.id);
+          playCard(currentPlayer.id, card);
+        } catch (error) {
+          console.error('AI card selection failed:', error);
+          // Fallback to simple AI
+          const fallbackCard = getAICardToPlay(
+            currentPlayer,
+            gameState.currentTrick.leadSuit,
+            gameState.trumpSuit,
+            gameState.trumpRevealed,
+            gameState.currentTrick
+          );
+          playCard(currentPlayer.id, fallbackCard);
+        } finally {
+          aiThinkingRef.current = false;
+        }
+      };
+
+      const timer = setTimeout(playAICard, 600);
+      return () => {
+        clearTimeout(timer);
+        aiThinkingRef.current = false;
+      };
     }
     
     if (gameState.gamePhase === 'trickEnd') {
@@ -207,7 +228,7 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
       }, 1200);
       return () => clearTimeout(timer);
     }
-  }, [gameState.currentPlayerIndex, gameState.gamePhase, gameState.players, gameState.currentTrick, gameState.trumpSuit, gameState.trumpRevealed, playCard]);
+  }, [gameState.currentPlayerIndex, gameState.gamePhase, gameState.players, gameState.currentTrick, gameState.trumpSuit, gameState.trumpRevealed, playCard, getAICard, gameState]);
   
   const handleCardClick = (card: Card) => {
     const currentPlayer = gameState.players[gameState.currentPlayerIndex];
@@ -237,7 +258,8 @@ export function GameBoard({ playerNames, onBackToMenu }: GameBoardProps) {
           potTens={gameState.potTens}
           potTensTeam={gameState.potTensTeam}
         />
-        <div className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border">
+        <div className="px-4 py-2 bg-card/80 backdrop-blur-sm rounded-lg border border-border flex items-center gap-2">
+          {isThinking && <Brain className="w-4 h-4 text-primary animate-pulse" />}
           <span className="text-sm text-foreground">{gameState.message}</span>
         </div>
       </div>
